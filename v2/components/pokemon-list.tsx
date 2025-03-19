@@ -24,7 +24,7 @@ export function PokemonList() {
                 const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`)
                 const data = await response.json()
 
-                const formattedData = data.results.map((pokemon: any, index: number) => ({
+                const formattedData = data.results.map((pokemon: { name: string; url: string }, index: number) => ({
                     id: offset + index + 1,
                     name: pokemon.name,
                     url: pokemon.url,

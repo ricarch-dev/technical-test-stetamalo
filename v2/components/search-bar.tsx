@@ -35,12 +35,12 @@ export function SearchBar() {
 
                 // Filter pokemon by name containing the query
                 const filteredResults = data.results
-                    .filter((pokemon: any) => pokemon.name.includes(query.toLowerCase()))
+                    .filter((pokemon: { name: string; url: string }) => pokemon.name.includes(query.toLowerCase()))
                     .slice(0, 5) // Limit to first 5 results for dropdown
-                    .map((pokemon: any) => {
+                    .map((pokemon: { name: string; url: string }) => {
                         const id = pokemon.url.split("/").filter(Boolean).pop()
                         return {
-                            id: Number.parseInt(id),
+                            id: Number.parseInt(id || "0"),
                             name: pokemon.name,
                         }
                     })
@@ -83,6 +83,8 @@ export function SearchBar() {
                     <span className="sr-only">Search</span>
                 </Button>
             </div>
+
+            {loading && <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">Loading...</div>}
 
             {results.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">

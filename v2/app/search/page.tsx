@@ -7,11 +7,6 @@ import { Button } from "@/components/ui/button"
 import { PokemonCard } from "@/components/pokemon-card"
 import { SearchBar } from "@/components/search-bar"
 
-interface SearchPageProps {
-    searchParams: {
-        q: string
-    }
-}
 
 export const metadata: Metadata = {
     title: "Search Results | Pokémon App",
@@ -25,11 +20,11 @@ async function searchPokemon(query: string) {
         const data = await response.json()
 
         // Filter pokemon by name containing the query
-        const filteredResults = data.results.filter((pokemon: any) => pokemon.name.includes(query.toLowerCase()))
+        const filteredResults = data.results.filter((pokemon: { name: string; url: string }) => pokemon.name.includes(query.toLowerCase()))
 
         // Format the results with IDs
-        return filteredResults.map((pokemon: any) => {
-            const id = pokemon.url.split("/").filter(Boolean).pop()
+        return filteredResults.map((pokemon: { name: string; url: string }) => {
+            const id = pokemon.url.split("/").filter(Boolean).pop() || "0"
             return {
                 id: Number.parseInt(id),
                 name: pokemon.name,
@@ -42,8 +37,9 @@ async function searchPokemon(query: string) {
     }
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-    const query = searchParams.q || ""
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{q: string}> }) {
+    const params = await searchParams
+    const query = params.q || ""
     const results = await searchPokemon(query)
 
     return (
@@ -81,7 +77,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
                 {results.length > 0 ? (
                     <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {results.map((pokemon: any) => (
+                        {results.map((pokemon: { id: number; name: string; url: string }) => (
                             <PokemonCard key={pokemon.id} pokemon={pokemon} />
                         ))}
                     </div>

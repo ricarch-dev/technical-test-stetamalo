@@ -9,12 +9,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-interface PokemonPageProps {
-    params: {
-        id: string
-    }
-}
-
 async function getPokemon(id: string) {
     try {
         const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
@@ -60,8 +54,9 @@ async function getEvolutionChain(url: string) {
     }
 }
 
-export async function generateMetadata({ params }: PokemonPageProps): Promise<Metadata> {
-    const pokemon = await getPokemon(params.id)
+export async function generateMetadata({ params }: {params: Promise<{ id: string }>}): Promise<Metadata> {
+    const { id } = await params
+    const pokemon = await getPokemon(id)
 
     if (!pokemon) {
         return {
@@ -71,7 +66,7 @@ export async function generateMetadata({ params }: PokemonPageProps): Promise<Me
 
     return {
         title: `${pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)} | Pokémon App`,
-        description: `View details about ${pokemon.name}, a ${pokemon.types.map((t: any) => t.type.name).join("/")} type Pokémon.`,
+        description: `View details about ${pokemon.name}, a ${pokemon.types.map((t: { type: { name: string } }) => t.type.name).join("/")} type Pokémon.`,
     }
 }
 
@@ -102,10 +97,23 @@ function getIdFromUrl(url: string) {
 }
 
 // Process evolution chain data
-function processEvolutionChain(chain: any, evolutions: any[] = []) {
-    if (!chain) return []
+interface EvolutionChain {
+    species: {
+        name: string;
+        url: string;
+    };
+    evolves_to: EvolutionChain[];
+}
 
-    const pokemonId = getIdFromUrl(chain.species.url)
+interface Evolution {
+    id: string;
+    name: string;
+}
+
+function processEvolutionChain(chain: EvolutionChain, evolutions: Evolution[] = []) {
+    if (!chain || !chain.species.url) return []
+
+    const pokemonId = getIdFromUrl(chain.species.url) || ""
 
     evolutions.push({
         id: pokemonId,
@@ -113,7 +121,7 @@ function processEvolutionChain(chain: any, evolutions: any[] = []) {
     })
 
     if (chain.evolves_to && chain.evolves_to.length > 0) {
-        chain.evolves_to.forEach((evolution: any) => {
+        chain.evolves_to.forEach((evolution: EvolutionChain) => {
             processEvolutionChain(evolution, evolutions)
         })
     }
@@ -121,8 +129,9 @@ function processEvolutionChain(chain: any, evolutions: any[] = []) {
     return evolutions
 }
 
-export default async function PokemonPage({ params }: PokemonPageProps) {
-    const pokemon = await getPokemon(params.id)
+export default async function PokemonPage({ params }: {params: Promise<{ id: string }>}) {
+    const { id } = await params
+    const pokemon = await getPokemon(id)
 
     if (!pokemon) {
         notFound()
@@ -130,7 +139,7 @@ export default async function PokemonPage({ params }: PokemonPageProps) {
 
     const pokemonId = pokemon.id.toString().padStart(3, "0")
     const pokemonName = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
-    const pokemonTypes = pokemon.types.map((type: any) => type.type.name)
+    const pokemonTypes = pokemon.types.map((type: { type: { name: string } }) => type.type.name)
     const pokemonImage = pokemon.sprites.other["official-artwork"].front_default
 
     // Get previous and next Pokémon IDs
@@ -138,9 +147,9 @@ export default async function PokemonPage({ params }: PokemonPageProps) {
     const nextId = pokemon.id < 1010 ? pokemon.id + 1 : null
 
     // Get species and evolution chain
-    const species = await getPokemonSpecies(params.id)
+    const species = await getPokemonSpecies(id)
     let evolutionChain = null
-    let evolutions: any[] = []
+    let evolutions: { id: string; name: string }[] = []
 
     if (species && species.evolution_chain) {
         evolutionChain = await getEvolutionChain(species.evolution_chain.url)
@@ -203,7 +212,7 @@ export default async function PokemonPage({ params }: PokemonPageProps) {
                         <CardContent className="p-6">
                             <h2 className="mb-4 text-xl font-semibold">Base Stats</h2>
                             <div className="space-y-4">
-                                {pokemon.stats.map((stat: any) => {
+                                {pokemon.stats.map((stat: { base_stat: number; stat: { name: string } }) => {
                                     const statName = stat.stat.name
                                         .replace(/-/g, " ")
                                         .split(" ")
@@ -254,7 +263,7 @@ export default async function PokemonPage({ params }: PokemonPageProps) {
                                 <div>
                                     <p className="text-sm text-gray-500">Abilities</p>
                                     <p className="font-medium capitalize">
-                                        {pokemon.abilities.map((ability: any) => ability.ability.name.replace(/-/g, " ")).join(", ")}
+                                        {pokemon.abilities.map((ability: { ability: { name: string } }) => ability.ability.name.replace(/-/g, " ")).join(", ")}
                                     </p>
                                 </div>
                             </div>
