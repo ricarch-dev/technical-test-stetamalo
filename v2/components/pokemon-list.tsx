@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { PokemonCard } from "@/components/pokemon-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+import { PokemonCard } from "./pokemon-card"
 
 interface Pokemon {
     id: number
